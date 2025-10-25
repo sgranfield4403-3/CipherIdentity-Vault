@@ -1,0 +1,19 @@
+{
+  "name": "fhe-identity-vault-contracts",
+  "version": "1.0.0",
+  "scripts": {
+    "deploy": "hardhat run scripts/deploy.js --network sepolia",
+    "compile": "hardhat compile"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.0",
+    "hardhat": "^2.22.0"
+  },
+  "dependencies": {
+    "@fhevm/solidity": "^0.8.0",
+    "@zama-fhe/oracle-solidity": "^0.2.0",
+    "encrypted-types": "^0.0.4"
+  }
+}

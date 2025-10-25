@@ -1,0 +1,9 @@
+{
+  "build": {
+    "env": {
+      "VITE_CONTRACT_ADDRESS": "0xf25e7E5d975cAc9adb608C39180c33afb9c07Bdb",
+      "VITE_SEPOLIA_CHAIN_ID": "11155111",
+      "VITE_SEPOLIA_RPC_URL": "https://ethereum-sepolia-rpc.publicnode.com"
+    }
+  }
+}

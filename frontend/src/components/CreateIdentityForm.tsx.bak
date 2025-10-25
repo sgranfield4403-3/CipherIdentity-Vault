@@ -1,0 +1,253 @@
+import React, { useState } from 'react';
+import { Form, Input, Slider, Select, Radio, Button, Card, Space, message, Typography } from 'antd';
+import { LockOutlined, UserAddOutlined } from '@ant-design/icons';
+import { useAccount, useWriteContract, usePublicClient } from 'wagmi';
+import { contractConfig } from '../config/contract';
+import { encryptNetWorth } from '../utils/fhe';
+import { parseEventLogs } from 'viem';
+
+const { Title, Text } = Typography;
+const { Option } = Select;
+
+interface CreateIdentityFormProps {
+  onSuccess: () => void;
+}
+
+export const CreateIdentityForm: React.FC<CreateIdentityFormProps> = ({ onSuccess }) => {
+  const [form] = Form.useForm();
+  const { address } = useAccount();
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (values: any) => {
+    if (!address) {
+      message.error('Please connect your wallet');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const loadingMessage = message.loading('Encrypting net worth...', 0);
+
+    try {
+      // Step 1: Encrypt net worth using FHE SDK
+      const { handle, proof } = await encryptNetWorth(
+        values.netWorth,
+        contractConfig.address,
+        address
+      );
+
+      loadingMessage();
+      const txMessage = message.loading('Creating identity on blockchain...', 0);
+
+      // Step 2: Call contract to create identity
+      const hash = await writeContractAsync({
+        ...contractConfig,
+        functionName: 'createIdentity',
+        args: [
+          handle,      // externalEuint64 encryptedNetWorth (first handle)
+          inputProof,      // bytes proof
+          values.domicile,    // uint32 domicile
+          values.tier,        // uint16 tier
+          values.pep,         // uint8 pep
+          values.watchlist,   // uint8 watchlist
+          values.riskScore,   // uint8 riskScore
+        ],
+      });
+
+      txMessage();
+      const confirmMessage = message.loading('Waiting for confirmation...', 0);
+
+      // Step 3: Wait for transaction confirmation with polling
+      const receipt = await publicClient!.waitForTransactionReceipt({
+        hash,
+        confirmations: 1,
+      });
+
+      confirmMessage();
+
+      if (receipt.status === 'success') {
+        // Parse event logs to get creation details
+        const logs = parseEventLogs({
+          abi: contractConfig.abi,
+          logs: receipt.logs,
+          eventName: 'IdentityCreated',
+        });
+
+        if (logs.length > 0) {
+          message.success({
+            content: 'Identity created successfully!',
+            duration: 5,
+          });
+        } else {
+          message.success('Identity created successfully!');
+        }
+
+        form.resetFields();
+        onSuccess();
+      } else {
+        throw new Error('Transaction failed');
+      }
+    } catch (error: any) {
+      console.error('Failed to create identity:', error);
+      if (loadingMessage) loadingMessage();
+
+      if (error?.message?.includes('IdentityAlreadyExists')) {
+        message.error('Identity already exists for this address');
+      } else if (error?.message?.includes('user rejected')) {
+        message.error('Transaction cancelled');
+      } else {
+        message.error(`Failed to create identity: ${error?.message || 'Unknown error'}`);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Card
+      title={
+        <Space>
+          <UserAddOutlined />
+          <span>Create Identity</span>
+        </Space>
+      }
+      style={{ maxWidth: 800, margin: '0 auto' }}
+    >
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        initialValues={{
+          netWorth: 100000,
+          domicile: 50,
+          tier: 5,
+          pep: 0,
+          watchlist: 0,
+          riskScore: 25,
+        }}
+      >
+        <Form.Item
+          label={
+            <Space>
+              <LockOutlined />
+              <span>Net Worth (Will be encrypted)</span>
+            </Space>
+          }
+          name="netWorth"
+          rules={[
+            { required: true, message: 'Please enter net worth' },
+            { type: 'number', min: 0, message: 'Net worth must be positive' },
+          ]}
+        >
+          <Input
+            type="number"
+            placeholder="Enter net worth"
+            prefix="$"
+            size="large"
+            min={0}
+            max={10000000000}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Domicile (0-100)"
+          name="domicile"
+          rules={[{ required: true }]}
+        >
+          <Slider
+            min={0}
+            max={100}
+            marks={{
+              0: '0',
+              25: '25',
+              50: '50',
+              75: '75',
+              100: '100',
+            }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Tier"
+          name="tier"
+          rules={[{ required: true, message: 'Please select tier' }]}
+        >
+          <Select size="large" placeholder="Select tier">
+            {[...Array(11)].map((_, i) => (
+              <Option key={i} value={i}>
+                Tier {i}
+              </Option>
+            ))}
+          </Select>
+        </Form.Item>
+
+        <Form.Item
+          label="Politically Exposed Person (PEP)"
+          name="pep"
+          rules={[{ required: true }]}
+        >
+          <Radio.Group>
+            <Radio value={0}>No</Radio>
+            <Radio value={1}>Yes</Radio>
+          </Radio.Group>
+        </Form.Item>
+
+        <Form.Item
+          label="Watchlist Status (0-5)"
+          name="watchlist"
+          rules={[{ required: true }]}
+        >
+          <Slider
+            min={0}
+            max={5}
+            marks={{
+              0: 'Clear',
+              1: '1',
+              2: '2',
+              3: '3',
+              4: '4',
+              5: 'High',
+            }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Risk Score (0-100)"
+          name="riskScore"
+          rules={[{ required: true }]}
+        >
+          <Slider
+            min={0}
+            max={100}
+            marks={{
+              0: 'Low',
+              25: '25',
+              50: 'Medium',
+              75: '75',
+              100: 'High',
+            }}
+          />
+        </Form.Item>
+
+        <Form.Item>
+          <Button
+            type="primary"
+            htmlType="submit"
+            size="large"
+            loading={isSubmitting}
+            disabled={!address || isSubmitting}
+            block
+            icon={<UserAddOutlined />}
+          >
+            {isSubmitting ? 'Creating Identity...' : 'Create Identity'}
+          </Button>
+        </Form.Item>
+
+        {!address && (
+          <Text type="warning">Please connect your wallet to create an identity</Text>
+        )}
+      </Form>
+    </Card>
+  );
+};
