@@ -1,7 +1,7 @@
 // Contract configuration
 import contractArtifact from '../contracts/FHEIdentityVault.json';
 
-export const CONTRACT_ADDRESS = '0x1260789F4C939FDf7a0F5c30c4b90FB4aF161753'; // Deployed on Sepolia
+export const CONTRACT_ADDRESS = '0xDD6CeBe2030AE48274f9C62DB4b1EC1CE273F30A'; // Deployed on Sepolia (fhEVM 0.9.1)
 
 export const CONTRACT_ABI = contractArtifact.abi;
 
