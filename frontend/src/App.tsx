@@ -3,7 +3,7 @@ import { Layout, Typography, Space, Spin, ConfigProvider, theme } from 'antd';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useReadContract } from 'wagmi';
 import { CreateIdentityForm } from './components/CreateIdentityForm';
-import { ViewIdentity } from './components/ViewIdentity';
+import { IdentityDashboard } from './components/IdentityDashboard';
 import { Hero } from './components/Hero';
 import { HowItWorks } from './components/HowItWorks';
 import { Footer } from './components/Footer';
@@ -107,7 +107,7 @@ function App() {
                 </Title>
               </div>
             ) : hasIdentity ? (
-              <ViewIdentity />
+              <IdentityDashboard />
             ) : (
               <CreateIdentityForm onSuccess={handleIdentityCreated} />
             )}
