@@ -1,10 +1,18 @@
 import React, { useState } from 'react';
-import { Form, Input, Slider, Select, Radio, Button, Card, Space, message, Typography } from 'antd';
+import { Form, Input, Slider, Select, Radio, Button, Card, Space, Typography } from 'antd';
 import { LockOutlined, UserAddOutlined } from '@ant-design/icons';
 import { useAccount, useWriteContract, usePublicClient } from 'wagmi';
 import { contractConfig } from '../config/contract';
 import { encryptNetWorth } from '../utils/fhe';
 import { parseEventLogs } from 'viem';
+import {
+  showTxSubmitted,
+  showTxSuccess,
+  showTxFailed,
+  showTxRejected,
+  showLoading,
+  showError,
+} from '../utils/toast';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -22,12 +30,13 @@ export const CreateIdentityForm: React.FC<CreateIdentityFormProps> = ({ onSucces
 
   const handleSubmit = async (values: any) => {
     if (!address) {
-      message.error('Please connect your wallet');
+      showError('Please connect your wallet');
       return;
     }
 
     setIsSubmitting(true);
-    const loadingMessage = message.loading('Encrypting net worth...', 0);
+    let loadingMessage = showLoading('Encrypting net worth with FHE...');
+    let txHash: string | null = null;
 
     try {
       // Step 1: Encrypt net worth using FHE SDK
@@ -38,15 +47,15 @@ export const CreateIdentityForm: React.FC<CreateIdentityFormProps> = ({ onSucces
       );
 
       loadingMessage();
-      const txMessage = message.loading('Creating identity on blockchain...', 0);
+      loadingMessage = showLoading('Please confirm the transaction in your wallet...');
 
       // Step 2: Call contract to create identity
       const hash = await writeContractAsync({
         ...contractConfig,
         functionName: 'createIdentity',
         args: [
-          handle,      // externalEuint64 encryptedNetWorth (first handle)
-          proof,             // bytes proof
+          handle,             // externalEuint64 encryptedNetWorth
+          proof,              // bytes proof
           values.domicile,    // uint32 domicile
           values.tier,        // uint16 tier
           values.pep,         // uint8 pep
@@ -55,16 +64,21 @@ export const CreateIdentityForm: React.FC<CreateIdentityFormProps> = ({ onSucces
         ],
       });
 
-      txMessage();
-      const confirmMessage = message.loading('Waiting for confirmation...', 0);
+      txHash = hash;
+      loadingMessage();
 
-      // Step 3: Wait for transaction confirmation with polling
+      // Show transaction submitted notification with hash link
+      showTxSubmitted(hash);
+
+      loadingMessage = showLoading('Waiting for blockchain confirmation...');
+
+      // Step 3: Wait for transaction confirmation
       const receipt = await publicClient!.waitForTransactionReceipt({
         hash,
         confirmations: 1,
       });
 
-      confirmMessage();
+      loadingMessage();
 
       if (receipt.status === 'success') {
         // Parse event logs to get creation details
@@ -74,30 +88,28 @@ export const CreateIdentityForm: React.FC<CreateIdentityFormProps> = ({ onSucces
           eventName: 'IdentityCreated',
         });
 
-        if (logs.length > 0) {
-          message.success({
-            content: 'Identity created successfully!',
-            duration: 5,
-          });
-        } else {
-          message.success('Identity created successfully!');
-        }
+        // Show success notification with transaction hash link
+        showTxSuccess(hash, 'Identity Created Successfully');
 
         form.resetFields();
         onSuccess();
       } else {
-        throw new Error('Transaction failed');
+        // Transaction was mined but failed
+        showTxFailed(hash, 'Transaction was reverted on-chain. Please check the transaction details.');
       }
     } catch (error: any) {
       console.error('Failed to create identity:', error);
-      if (loadingMessage) loadingMessage();
+      loadingMessage();
 
-      if (error?.message?.includes('IdentityAlreadyExists')) {
-        message.error('Identity already exists for this address');
-      } else if (error?.message?.includes('user rejected')) {
-        message.error('Transaction cancelled');
+      // Handle different error types with appropriate notifications
+      if (error?.message?.includes('user rejected') || error?.message?.includes('User rejected')) {
+        showTxRejected();
+      } else if (error?.message?.includes('IdentityAlreadyExists')) {
+        showTxFailed(txHash, 'Identity already exists for this address. Each address can only have one identity.');
+      } else if (error?.message?.includes('insufficient funds')) {
+        showTxFailed(txHash, 'Insufficient funds to complete this transaction. Please add more ETH to your wallet.');
       } else {
-        message.error(`Failed to create identity: ${error?.message || 'Unknown error'}`);
+        showTxFailed(txHash, error?.shortMessage || error?.message || 'An unexpected error occurred');
       }
     } finally {
       setIsSubmitting(false);
