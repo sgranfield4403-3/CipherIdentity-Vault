@@ -2,18 +2,23 @@
   "name": "fhe-identity-vault-contracts",
   "version": "1.0.0",
   "scripts": {
+    "compile": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.js --network sepolia",
-    "compile": "hardhat compile"
+    "test": "hardhat test",
+    "test:unit": "hardhat test test/FHEIdentityVault.test.js",
+    "test:gas": "hardhat test test/gas-estimation.test.js",
+    "test:integration": "hardhat test test/FHEIdentityVault.integration.test.js --network sepolia",
+    "test:coverage": "hardhat coverage"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
+    "chai": "^4.3.7",
     "dotenv": "^16.4.5",
     "ethers": "^6.13.0",
     "hardhat": "^2.22.0"
   },
   "dependencies": {
-    "@fhevm/solidity": "^0.8.0",
-    "@zama-fhe/oracle-solidity": "^0.2.0",
-    "encrypted-types": "^0.0.4"
+    "@fhevm/solidity": "^0.9.1"
   }
 }
