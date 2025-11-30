@@ -44,3 +44,16 @@ typechain-types/
 
 # Misc
 *.tsbuildinfo
+
+# Vercel
+.vercel/
+frontend/.vercel/
+
+# Test artifacts
+test-results/
+playwright-report/
+
+# Security
+*.pem
+*.key
+secrets.json
