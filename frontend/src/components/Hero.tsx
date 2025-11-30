@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Typography, Row, Col, Card, Space } from 'antd';
 import {
   LockOutlined,
@@ -10,7 +10,7 @@ import {
 const { Title, Paragraph, Text } = Typography;
 
 export const Hero: React.FC = () => {
-  const features = [
+  const features = useMemo(() => [
     {
       icon: <LockOutlined style={{ fontSize: 32, color: '#1890ff' }} />,
       title: 'FHE Technology',
@@ -31,7 +31,7 @@ export const Hero: React.FC = () => {
       title: 'Optimized',
       description: 'Only encrypts core parameters, other data remains plaintext to optimize Gas costs'
     }
-  ];
+  ], []);
 
   return (
     <div style={{
