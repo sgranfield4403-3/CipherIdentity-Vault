@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Typography, Steps, Card, Space } from 'antd';
 import {
   WalletOutlined,
@@ -8,6 +8,8 @@ import {
 } from '@ant-design/icons';
 
 const { Title, Paragraph } = Typography;
+
+const ICON_STYLE = { fontSize: 24 };
 
 export const HowItWorks: React.FC = () => {
   return (
@@ -23,22 +25,22 @@ export const HowItWorks: React.FC = () => {
           {
             title: 'Connect Wallet',
             description: 'Click "Connect Wallet" in the top right to connect your MetaMask or other Web3 wallet',
-            icon: <WalletOutlined style={{ fontSize: 24 }} />,
+            icon: <WalletOutlined style={ICON_STYLE} />,
           },
           {
             title: 'Fill Identity Information',
             description: 'Enter your Net Worth (will be encrypted) and other identity parameters (stored as plaintext)',
-            icon: <FormOutlined style={{ fontSize: 24 }} />,
+            icon: <FormOutlined style={ICON_STYLE} />,
           },
           {
             title: 'FHE Encryption',
             description: 'System automatically encrypts your Net Worth data using Zama FHE technology',
-            icon: <LockOutlined style={{ fontSize: 24 }} />,
+            icon: <LockOutlined style={ICON_STYLE} />,
           },
           {
             title: 'On-Chain Confirmation',
             description: 'After confirming the transaction, your encrypted identity will be permanently stored on Sepolia blockchain',
-            icon: <CheckCircleOutlined style={{ fontSize: 24 }} />,
+            icon: <CheckCircleOutlined style={ICON_STYLE} />,
           },
         ]}
       />
