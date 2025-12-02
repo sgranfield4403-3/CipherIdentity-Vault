@@ -9,9 +9,24 @@ import App from './App';
 import '@rainbow-me/rainbowkit/styles.css';
 import './index.css';
 
-const queryClient = new QueryClient();
+// Configure React Query with optimized defaults
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      gcTime: 1000 * 60 * 10, // 10 minutes
+      retry: 2,
+    },
+  },
+});
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+// Mount application
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error('Root element not found');
+}
+
+ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
