@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Card, Row, Col, Tag, Space, Typography, Statistic, Divider, Spin, Alert } from 'antd';
 import {
   UserOutlined,
@@ -72,21 +72,21 @@ export const ViewIdentity: React.FC = () => {
     );
   }
 
-  const getRiskColor = (score: number) => {
+  const getRiskColor = useCallback((score: number) => {
     if (score < 30) return 'green';
     if (score < 60) return 'orange';
     return 'red';
-  };
+  }, []);
 
-  const getWatchlistStatus = (level: number) => {
+  const getWatchlistStatus = useCallback((level: number) => {
     const statuses = ['Clear', 'Low', 'Medium', 'Elevated', 'High', 'Critical'];
     return statuses[level] || 'Unknown';
-  };
+  }, []);
 
-  const getWatchlistColor = (level: number) => {
+  const getWatchlistColor = useCallback((level: number) => {
     const colors = ['green', 'blue', 'gold', 'orange', 'red', 'red'];
     return colors[level] || 'default';
-  };
+  }, []);
 
   return (
     <Card
